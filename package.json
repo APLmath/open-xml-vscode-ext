@@ -10,17 +10,37 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:open-xml-vscode-ext.helloWorld",
+    "onCommand:open-xml-vscode-ext.open-in-workspace",
     "onFileSystem:oxml"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "open-xml-vscode-ext.helloWorld",
-        "title": "Hello World"
+        "command": "open-xml-vscode-ext.open-in-workspace",
+        "title": "Open document in workspace"
       }
-    ]
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "open-xml-vscode-ext.open-in-workspace",
+          "group": "navigation",
+          "when": "resourceExtname == .pptx"
+        }
+      ]
+    },
+    "contributes": {
+      "resourceLabelFormatters": [
+        {
+          "scheme": "oxml",
+          "formatting": {
+            "label": "${path}",
+            "separator": "/"
+          }
+        }
+      ]
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
