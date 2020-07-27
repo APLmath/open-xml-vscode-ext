@@ -20,7 +20,7 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Display a message box to the user
     vscode.window.showInformationMessage('Hello World from open-xml-vscode-ext!');
-    vscode.window.showTextDocument(new OxmlUri(vscode.Uri.parse('file:///Users/jdoe/blah.pptx'), '/').toUri());
+    vscode.window.showTextDocument(new OxmlUri(vscode.Uri.parse('file:///Users/jdoe/blah.pptx'), '/[Content_Types]').toUri());
   });
   context.subscriptions.push(disposable);
 

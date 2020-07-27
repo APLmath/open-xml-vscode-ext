@@ -7,14 +7,14 @@ export class OxmlUri {
   readonly packageUri: vscode.Uri;
 
   constructor(uri: vscode.Uri, readonly partName: string) {
-    if (uri.scheme !== 'file' || uri.query !== '' || uri.fragment !== '') {
-      throw new Error('Must be a file Uri without a query or fragment');
+    if (uri.scheme !== 'file' || uri.query !== '' || uri.fragment !== '' || uri.path.includes('\\')) {
+      throw new Error('Must be a file Uri without a query or fragment or backslashes in the URI path');
     }
 
     this.packageUri = uri;
   }
 
   toUri(): vscode.Uri {
-    return vscode.Uri.parse(`${SCHEME}://${this.packageUri.path}#${this.partName}`);
+    return vscode.Uri.parse(`${SCHEME}://${this.packageUri.path.replace(/\//g, '\\')}${this.partName}`);
   }
 }
