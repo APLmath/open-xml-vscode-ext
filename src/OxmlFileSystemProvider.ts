@@ -1,7 +1,10 @@
 import * as vscode from 'vscode'
+import * as yauzl from 'yauzl-promise'
 import { TextEncoder } from 'util';
+import { OxmlUri } from './OxmlUri';
 
 export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
+  private _zipMap: Map<string, yauzl.ZipFile> = {};
 
   constructor() {
   }
@@ -39,9 +42,28 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
     throw vscode.FileSystemError.NoPermissions('Readonly to start');
   }
 
-  readFile(uri: vscode.Uri): Uint8Array | Thenable<Uint8Array> {
-    const encoder = new TextEncoder();
-    return encoder.encode(`Hello from ${uri.toString()}`);
+  async readFile(uri: vscode.Uri): Promise<Uint8Array> {
+    const oxmlUri = OxmlUri.fromUri(uri);
+
+    const zippy = await yauzl.open(oxmlUri.packageUri.path);
+    let entry: yauzl.Entry | null = null;
+    while (entry = await zippy.readEntry()) {
+      if (oxmlUri.partName == '/' + entry.fileName) {
+        break;
+      }
+    }
+
+    if (entry == null) {
+      throw vscode.FileSystemError.FileNotFound;
+    }
+
+    let stream = await entry.openReadStream();
+    let chunks = [];
+    for await (let chunk of stream) {
+      chunks.push(chunk);
+    }
+    let buffer = Buffer.concat(chunks);
+    return new Uint8Array(buffer.buffer);
   }
 
   writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean; overwrite: boolean; }): void | Thenable<void> {

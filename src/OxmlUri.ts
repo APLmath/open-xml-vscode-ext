@@ -14,6 +14,10 @@ export class OxmlUri {
     this.packageUri = uri;
   }
 
+  static fromUri(uri: vscode.Uri): OxmlUri {
+    return new OxmlUri(vscode.Uri.parse(`file://${uri.authority.replace(/\\/g, '/')}`), uri.path);
+  }
+
   toUri(): vscode.Uri {
     return vscode.Uri.parse(`${SCHEME}://${this.packageUri.path.replace(/\//g, '\\')}${this.partName}`);
   }
