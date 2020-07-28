@@ -1,5 +1,5 @@
-import * as vscode from 'vscode'
-import * as yauzl from 'yauzl-promise'
+import * as vscode from 'vscode';
+import * as yauzl from 'yauzl-promise';
 import { OxmlUri } from './OxmlUri';
 
 interface EntryFile {
@@ -21,6 +21,7 @@ async function expandPackage(packageUri: vscode.Uri): Promise<EntryDirectory> {
     children: new Map()
   };
   let entry: yauzl.Entry | null = null;
+  debugger;
   while (entry = await zippedPackage.readEntry()) {
     const pathComponents = entry.fileName.split('/');
     let currentDirectory = packageDirectory;
