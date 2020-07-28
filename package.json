@@ -30,7 +30,7 @@
         {
           "command": "open-xml-vscode-ext.open-in-workspace",
           "group": "navigation",
-          "when": "resourceExtname == .pptx"
+          "when": "resourceExtname == .docx || resourceExtname == .pptx || resourceExtname == .xlsx"
         }
       ]
     },

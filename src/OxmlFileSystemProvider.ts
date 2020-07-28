@@ -44,7 +44,7 @@ async function expandPackage(packageUri: vscode.Uri): Promise<EntryDirectory> {
       chunks.push(chunk);
     }
     let buffer = Buffer.concat(chunks);
-    const data = new Uint8Array(buffer.buffer);
+    const data = new Uint8Array(buffer);
 
     currentDirectory.children.set(pathComponents[pathComponents.length - 1], {
       type: 'FILE',
@@ -115,9 +115,6 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
     const oxmlUri = OxmlUri.fromUri(uri);
     const packageDirectory = await this._getPackage(oxmlUri.packageUri);
     const entry = traverseEntryDirectory(packageDirectory, oxmlUri.partName);
-    console.log('==================');
-    console.log(oxmlUri.partName);
-    console.log(entry);
 
     return {
       type: entry.type === 'DIRECTORY' ? vscode.FileType.Directory : vscode.FileType.File,
