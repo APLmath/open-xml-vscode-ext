@@ -114,9 +114,6 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
     const oxmlUri = OxmlUri.fromUri(uri);
     const packageDirectory = await this._getPackage(oxmlUri.packageUri);
     const entry = traverseEntryDirectory(packageDirectory, oxmlUri.partName);
-    console.log('==================');
-    console.log(oxmlUri.partName);
-    console.log(entry);
 
     return {
       type: entry.type === 'DIRECTORY' ? vscode.FileType.Directory : vscode.FileType.File,
