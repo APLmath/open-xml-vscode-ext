@@ -43,7 +43,7 @@ async function expandPackage(packageUri: vscode.Uri): Promise<EntryDirectory> {
       chunks.push(chunk);
     }
     let buffer = Buffer.concat(chunks);
-    const data = new Uint8Array(buffer.buffer);
+    const data = new Uint8Array(buffer);
 
     currentDirectory.children.set(pathComponents[pathComponents.length - 1], {
       type: 'FILE',
