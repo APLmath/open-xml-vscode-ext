@@ -146,7 +146,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
       throw vscode.FileSystemError.FileNotFound;
     }
 
-    return (<EntryFile>entry).data;
+    return entry.data;
   }
 
   writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean; overwrite: boolean; }): void | Thenable<void> {
