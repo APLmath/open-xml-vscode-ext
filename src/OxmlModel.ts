@@ -1,27 +1,39 @@
+import * as xmldoc from 'xmldoc';
 import * as yauzl from 'yauzl-promise';
+import { TextDecoder, TextEncoder } from 'util';
 
 interface IEntry {
   entryName: string;
   toUint8Array(): Uint8Array; // TODO: Maybe split out to toUint8ArrayToDisplay and toUint8ArrayToSave, so we can display pretty XML, and save minified XML.
 }
 
-class XmlPart implements IEntry {
-  readonly type = 'XML';
-
-  private _rawData: Uint8Array;
+abstract class XmlEntry implements IEntry {
+  protected _document: xmldoc.XmlDocument;
 
   constructor(readonly entryName: string, rawData: Uint8Array) {
-    this._rawData = rawData;
-    // TODO: Parse rawData into XML, so then toUint8Array can pretty-print it for display.
+    const decoder = new TextDecoder('utf-8');
+    const xmlString = decoder.decode(rawData);
+
+    this._document = new xmldoc.XmlDocument(xmlString);
   }
 
   toUint8Array(): Uint8Array {
-    return this._rawData;
+    const encoder = new TextEncoder();
+    const xmlString = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + this._document.toString();
+    return encoder.encode(xmlString);
+  }
+}
+
+class XmlPart extends XmlEntry {
+  readonly partType = 'XML';
+
+  constructor(entryName: string, rawData: Uint8Array) {
+    super(entryName, rawData);
   }
 }
 
 class BinaryPart implements IEntry { // Could call it VerbatimPart, for cases like .txt files which aren't XML, but we should leave as is.
-  readonly type ='BINARY';
+  readonly partType ='BINARY';
 
   constructor(readonly entryName: string, private readonly _rawData: Uint8Array) {
     ;
@@ -34,27 +46,17 @@ class BinaryPart implements IEntry { // Could call it VerbatimPart, for cases li
 
 type Part = XmlPart | BinaryPart;
 
-class Relationship implements IEntry {
-  constructor(readonly entryName: string, private readonly _rawData: Uint8Array) {
-    ;
-  }
-
-  toUint8Array(): Uint8Array {
-    return this._rawData;
+class Relationship extends XmlEntry {
+  constructor(entryName: string, rawData: Uint8Array) {
+    super(entryName, rawData);
   }
 }
 
 const CONTENT_TYPES_ENTRY_NAME = '/[Content_Types].xml';
 
-class ContentTypes implements IEntry {
-  readonly entryName = CONTENT_TYPES_ENTRY_NAME;
-
-  constructor(private readonly _rawData: Uint8Array) {
-    ;
-  }
-
-  toUint8Array(): Uint8Array {
-    return this._rawData;
+class ContentTypes extends XmlEntry {
+  constructor(rawData: Uint8Array) {
+    super(CONTENT_TYPES_ENTRY_NAME, rawData);
   }
 }
 
