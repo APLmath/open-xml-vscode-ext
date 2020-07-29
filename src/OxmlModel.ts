@@ -61,43 +61,33 @@ class ContentTypes extends XmlEntry {
 }
 
 export class Package {
-  private _contentTypes: ContentTypes;
-  private _parts: Part[];
-  private _rels: Relationship[];
+  private _entries: Map<string, IEntry> = new Map();
 
   private constructor(rawEntryData: Map<string, Uint8Array>) {
     if (!rawEntryData.has(CONTENT_TYPES_ENTRY_NAME)) {
       throw new Error(`Package has no ${CONTENT_TYPES_ENTRY_NAME} file!`);
     }
 
-    this._contentTypes = new ContentTypes(<Uint8Array>rawEntryData.get(CONTENT_TYPES_ENTRY_NAME))
+    this._entries.set(CONTENT_TYPES_ENTRY_NAME, new ContentTypes(<Uint8Array>rawEntryData.get(CONTENT_TYPES_ENTRY_NAME)));
     rawEntryData.delete(CONTENT_TYPES_ENTRY_NAME);
-
-    this._parts = [];
-    this._rels = [];
 
     rawEntryData.forEach((rawData, name) => {
       if (name.endsWith('.rels')) {
-        this._rels.push(new Relationship(name, rawData))
+        this._entries.set(name, new Relationship(name, rawData));
       } else if (name.endsWith('.xml')) {
-        this._parts.push(new XmlPart(name, rawData))
+        this._entries.set(name, (new XmlPart(name, rawData)));
       } else {
-        this._parts.push(new BinaryPart(name, rawData))
+        this._entries.set(name, (new BinaryPart(name, rawData)));
       }
     });
   }
 
   getAllEntryNames(): string[] {
-    let entryNames = [this._contentTypes.entryName];
-    entryNames = entryNames.concat(this._parts.map((part) => part.entryName));
-    entryNames = entryNames.concat(this._rels.map((rel) => rel.entryName));
-
-    return entryNames;
+    return Array.from(this._entries.keys());
   }
 
   getEntryData(name: string): Uint8Array {
-    const entries: IEntry[] = ([this._contentTypes] as IEntry[]).concat(this._parts, this._rels);
-    const entry = entries.find((entry) => entry.entryName === name);
+    const entry = this._entries.get(name);
     if (entry) {
       return entry.toUint8Array();
     }

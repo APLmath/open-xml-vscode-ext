@@ -99,15 +99,21 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
     const oxmlPackage = await this._getPackage(oxmlUri.packageUri);
     try {
       const data = oxmlPackage.getEntryData(oxmlUri.partName);
-      return data
+      return data;
     }
     catch {
       throw vscode.FileSystemError.FileNotFound;
     }
   }
 
-  writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean; overwrite: boolean; }): void | Thenable<void> {
-    throw vscode.FileSystemError.NoPermissions('Readonly to start');
+  async writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean; overwrite: boolean; }): Promise<void> {
+    const oxmlUri = OxmlUri.fromUri(uri);
+    const oxmlPackage = await this._getPackage(oxmlUri.packageUri);
+
+    oxmlPackage.writeEntryData(oxmlUri.partName, content);
+
+    const data = await oxmlPackage.toUint8Array();
+    vscode.workspace.fs.writeFile(oxmlUri.packageUri, data);
   }
 
   delete(uri: vscode.Uri, options: { recursive: boolean; }): void | Thenable<void> {
