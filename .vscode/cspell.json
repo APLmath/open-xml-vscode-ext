@@ -6,8 +6,13 @@
     "language": "en",
     // words - list of words to be always considered correct
     "words": [
+        "andlee",
+        "docx",
+        "msft",
         "oxml",
-        "pptx"
+        "pptx",
+        "xmldoc",
+        "yazl"
     ],
 
     "flagWords": []

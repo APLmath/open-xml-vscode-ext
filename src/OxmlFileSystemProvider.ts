@@ -76,7 +76,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
     const children = new Map<string, vscode.FileType>();
     entryNames.forEach((name) => {
       if (name.startsWith(pathWithTrailingSlash)) {
-        const remainderPath = name.substring(pathWithTrailingSlash.length)
+        const remainderPath = name.substring(pathWithTrailingSlash.length);
         const pathComponents = remainderPath.split('/');
         const childName = pathComponents[0];
         children.set(childName, pathComponents.length === 1 ? vscode.FileType.File : vscode.FileType.Directory);
