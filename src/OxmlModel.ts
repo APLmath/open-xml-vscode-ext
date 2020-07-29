@@ -104,8 +104,9 @@ export class Package {
     throw new Error('Entry name not found');
   }
 
-  static async fromFile(path: string): Promise<Package> {
-    const zippedPackage = await yauzl.open(path); // TODO: We can be fancy and make this open from a stream, to support opening non-file:// URIs
+  static async fromUint8Array(rawData: Uint8Array): Promise<Package> {
+    const buffer = Buffer.from(rawData);
+    const zippedPackage = await yauzl.fromBuffer(buffer); // TODO: We can be fancy and make this open from a stream, to support opening non-file:// URIs
 
     async function loadEntry(entry: yauzl.Entry): Promise<[string, Uint8Array]> {
       let stream = await entry.openReadStream();

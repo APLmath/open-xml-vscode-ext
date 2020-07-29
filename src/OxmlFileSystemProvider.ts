@@ -8,7 +8,11 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
     const packageUriString = packageUri.toString();
     let oxmlPackagePromise = this._zipMap.get(packageUriString);
     if (!oxmlPackagePromise) {
-      oxmlPackagePromise = OxmlModel.Package.fromFile(packageUri.path);
+      async function createPackagePromise(packageUri: vscode.Uri): Promise<OxmlModel.Package> {
+        const rawData = await vscode.workspace.fs.readFile(packageUri);
+        return await OxmlModel.Package.fromUint8Array(rawData);
+      }
+      oxmlPackagePromise = createPackagePromise(packageUri);
       this._zipMap.set(packageUriString, oxmlPackagePromise);
     }
     return oxmlPackagePromise;
