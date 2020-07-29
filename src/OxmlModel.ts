@@ -5,7 +5,8 @@ import { TextDecoder, TextEncoder } from 'util';
 
 interface IEntry {
   entryName: string;
-  toUint8Array(): Uint8Array; // TODO: Maybe split out to toUint8ArrayToDisplay and toUint8ArrayToSave, so we can display pretty XML, and save minified XML.
+  toUint8ArrayForDisplay(): Uint8Array;
+  toUint8ArrayForSave(): Uint8Array;
 }
 
 abstract class XmlEntry implements IEntry {
@@ -18,9 +19,15 @@ abstract class XmlEntry implements IEntry {
     this._document = new xmldoc.XmlDocument(xmlString);
   }
 
-  toUint8Array(): Uint8Array {
+  toUint8ArrayForDisplay(): Uint8Array {
     const encoder = new TextEncoder();
     const xmlString = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + this._document.toString();
+    return encoder.encode(xmlString);
+  }
+
+  toUint8ArrayForSave(): Uint8Array {
+    const encoder = new TextEncoder();
+    const xmlString = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' + this._document.toString({compressed: true});
     return encoder.encode(xmlString);
   }
 }
@@ -40,7 +47,11 @@ class BinaryPart implements IEntry { // Could call it VerbatimPart, for cases li
     ;
   }
 
-  toUint8Array(): Uint8Array {
+  toUint8ArrayForDisplay(): Uint8Array {
+    return this._rawData;
+  }
+
+  toUint8ArrayForSave(): Uint8Array {
     return this._rawData;
   }
 }
@@ -90,7 +101,7 @@ export class Package {
   getEntryData(name: string): Uint8Array {
     const entry = this._entries.get(name);
     if (entry) {
-      return entry.toUint8Array();
+      return entry.toUint8ArrayForDisplay();
     }
     throw new Error('Entry name not found');
   }
@@ -130,7 +141,7 @@ export class Package {
 
     const entryNames = this.getAllEntryNames();
     this._entries.forEach((entry, name) => {
-      const data = entry.toUint8Array();
+      const data = entry.toUint8ArrayForSave();
       const buffer = Buffer.from(data);
       zippedPackage.addBuffer(buffer, name.substring(1)); // Take out the slash in beginning of name
     });
