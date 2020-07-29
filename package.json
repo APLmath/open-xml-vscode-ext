@@ -16,6 +16,7 @@
   ],
   "activationEvents": [
     "onCommand:open-xml-vscode-ext.open-in-workspace",
+    "onCustomEditor:open-xml-vscode-ext.oxml-file-editor",
     "onFileSystem:oxml"
   ],
   "main": "./out/extension.js",
@@ -28,6 +29,19 @@
       {
         "command": "open-xml-vscode-ext.scratchpad",
         "title": "Scratchpad for testing..."
+      }
+    ],
+    "customEditors": [
+      {
+        "viewType": "open-xml-vscode-ext.oxml-file-editor",
+        "displayName": "Open XML",
+        "selector": [
+          { "filenamePattern": "*.docx" },
+          { "filenamePattern": "*.pptx" },
+          { "filenamePattern": "*.xlsx" }
+
+        ],
+        "priority": "default"
       }
     ],
     "menus": {

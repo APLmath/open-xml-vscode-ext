@@ -3,8 +3,9 @@
 import * as vscode from 'vscode';
 import {OxmlUri} from './OxmlUri';
 import {OxmlFileSystemProvider} from './OxmlFileSystemProvider';
-import * as yauzl from 'yauzl-promise'
+import * as yauzl from 'yauzl-promise';
 import {promises as fsPromises} from 'fs';
+import { OxmlEditorProvider } from './OxmlEditorProvider';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -40,10 +41,12 @@ export function activate(context: vscode.ExtensionContext) {
     // }
     // console.log(chunks);
     const entries = await zippy.readEntries();
-    entries.forEach((entry) => {console.log(entry)});
+    entries.forEach((entry) => {console.log(entry);});
   }));
 
   context.subscriptions.push(vscode.workspace.registerFileSystemProvider(OxmlUri.SCHEME, new OxmlFileSystemProvider()));
+
+  context.subscriptions.push(OxmlEditorProvider.register(context));
 }
 
 // this method is called when your extension is deactivated
