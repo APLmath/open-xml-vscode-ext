@@ -1,4 +1,5 @@
 import * as xmldoc from 'xmldoc';
+import * as yazl from 'yazl';
 import * as yauzl from 'yauzl-promise';
 import { TextDecoder, TextEncoder } from 'util';
 
@@ -94,6 +95,10 @@ export class Package {
     throw new Error('Entry name not found');
   }
 
+  writeEntryData(name: string, data: Uint8Array) {
+    this._entries.set(name, new XmlPart(name, data));
+  }
+
   static async fromUint8Array(rawData: Uint8Array): Promise<Package> {
     const buffer = Buffer.from(rawData);
     const zippedPackage = await yauzl.fromBuffer(buffer); // TODO: We can be fancy and make this open from a stream, to support opening non-file:// URIs
@@ -118,5 +123,26 @@ export class Package {
     const rawEntryData = new Map(await Promise.all(loadingPromises));
     let oxmlPackage = new Package(rawEntryData);
     return oxmlPackage;
+  }
+
+  async toUint8Array(): Promise<Uint8Array> {
+    let zippedPackage = new yazl.ZipFile();
+
+    const entryNames = this.getAllEntryNames();
+    this._entries.forEach((entry, name) => {
+      const data = entry.toUint8Array();
+      const buffer = Buffer.from(data);
+      zippedPackage.addBuffer(buffer, name.substring(1)); // Take out the slash in beginning of name
+    });
+    zippedPackage.end();
+
+    const stream = zippedPackage.outputStream;
+    let chunks = [];
+    for await (let chunk of stream) {
+      chunks.push(chunk as Buffer);
+    }
+    let buffer = Buffer.concat(chunks);
+    const data = new Uint8Array(buffer);
+    return data;
   }
 }
