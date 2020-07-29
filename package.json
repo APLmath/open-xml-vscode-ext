@@ -38,17 +38,6 @@
           "when": "resourceExtname == .docx || resourceExtname == .pptx || resourceExtname == .xlsx"
         }
       ]
-    },
-    "contributes": {
-      "resourceLabelFormatters": [
-        {
-          "scheme": "oxml",
-          "formatting": {
-            "label": "${path}",
-            "separator": "/"
-          }
-        }
-      ]
     }
   },
   "scripts": {
