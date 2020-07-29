@@ -70,10 +70,30 @@ class ContentTypes extends XmlEntry {
   constructor(rawData: Uint8Array) {
     super(CONTENT_TYPES_ENTRY_NAME, rawData);
   }
+
+  createEntry(name: string, rawData: Uint8Array) {
+    // TODO: Actually use the content types data to determine each of these.
+    if (name.endsWith('.rels')) {
+      return new Relationship(name, rawData);
+    } else if (name.endsWith('.xml')) {
+      return new XmlPart(name, rawData);
+    } else {
+      return new BinaryPart(name, rawData);
+    }
+  }
 }
 
 export class Package {
   private _entries: Map<string, IEntry> = new Map();
+
+  private get _contentTypes() : ContentTypes {
+    const contentTypes = this._entries.get(CONTENT_TYPES_ENTRY_NAME);
+    if (!(contentTypes instanceof ContentTypes)) {
+      throw new Error(`Package has no ${CONTENT_TYPES_ENTRY_NAME} file!`);
+    }
+    return contentTypes;
+  }
+  
 
   private constructor(rawEntryData: Map<string, Uint8Array>) {
     if (!rawEntryData.has(CONTENT_TYPES_ENTRY_NAME)) {
@@ -84,14 +104,12 @@ export class Package {
     rawEntryData.delete(CONTENT_TYPES_ENTRY_NAME);
 
     rawEntryData.forEach((rawData, name) => {
-      if (name.endsWith('.rels')) {
-        this._entries.set(name, new Relationship(name, rawData));
-      } else if (name.endsWith('.xml')) {
-        this._entries.set(name, (new XmlPart(name, rawData)));
-      } else {
-        this._entries.set(name, (new BinaryPart(name, rawData)));
-      }
+      this._addEntry(name, rawData);
     });
+  }
+
+  private _addEntry(name: string, rawData: Uint8Array) {
+    this._entries.set(name, this._contentTypes.createEntry(name, rawData));
   }
 
   getAllEntryNames(): string[] {
@@ -106,13 +124,13 @@ export class Package {
     throw new Error('Entry name not found');
   }
 
-  writeEntryData(name: string, data: Uint8Array) {
-    this._entries.set(name, new XmlPart(name, data));
+  writeEntryData(name: string, rawData: Uint8Array) {
+    this._addEntry(name, rawData);
   }
 
   static async fromUint8Array(rawData: Uint8Array): Promise<Package> {
     const buffer = Buffer.from(rawData);
-    const zippedPackage = await yauzl.fromBuffer(buffer); // TODO: We can be fancy and make this open from a stream, to support opening non-file:// URIs
+    const zippedPackage = await yauzl.fromBuffer(buffer);
 
     async function loadEntry(entry: yauzl.Entry): Promise<[string, Uint8Array]> {
       let stream = await entry.openReadStream();
