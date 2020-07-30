@@ -116,6 +116,7 @@ type OxmlTreeItem = TreePackage | TreeDirectory | TreeContent;
 export class OxmlTreePackage extends vscode.TreeItem implements TreePackage {
     public type : 'package' = 'package';
     public oxmlUri : OxmlUri;
+    public iconPath = new vscode.ThemeIcon('package');
 
     constructor(packageInfo: PackageInfo) {
         super(packageInfo.fileName, vscode.TreeItemCollapsibleState.Collapsed);
@@ -130,7 +131,7 @@ class OxmlTreeDirectory extends vscode.TreeItem implements TreeDirectory {
 
     constructor(name: string, parentOxmlUri: OxmlUri) {
         super(name, vscode.TreeItemCollapsibleState.Collapsed);
-        this.oxmlUri = new OxmlUri(parentOxmlUri.packageUri, parentOxmlUri.partName + name + '/');
+        this.oxmlUri = new OxmlUri(parentOxmlUri.packageUri, parentOxmlUri.entryName + name + '/');
     }
 }
 
@@ -140,7 +141,7 @@ class OxmlTreeContent extends vscode.TreeItem {
 
     constructor(name: string, parentOxmlUri: OxmlUri) {
         super(name);
-        this.oxmlUri = new OxmlUri(parentOxmlUri.packageUri, parentOxmlUri.partName + name);
+        this.oxmlUri = new OxmlUri(parentOxmlUri.packageUri, parentOxmlUri.entryName + name);
         this.resourceUri = this.oxmlUri.toUri();
         this.command = {
             command: 'vscode.open',

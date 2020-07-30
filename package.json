@@ -35,6 +35,10 @@
       {
         "command": "open-xml-vscode-ext.close-oxml-package",
         "title": "Close package"
+      },
+      {
+        "command": "open-xml-vscode-ext.open-package-externally",
+        "title": "Open document externally"
       }
     ],
     "customEditors": [
@@ -75,6 +79,10 @@
           "command": "open-xml-vscode-ext.close-oxml-package",
           "when": "view == open-xml-vscode-ext.open-xml-documents && viewItem == oxmlPackage",
           "group": "inline"
+        },
+        {
+          "command": "open-xml-vscode-ext.open-package-externally",
+          "when": "view == open-xml-vscode-ext.open-xml-documents && viewItem == oxmlPackage"
         }
       ]
     },

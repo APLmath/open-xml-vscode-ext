@@ -59,6 +59,10 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }));
 
+  context.subscriptions.push(vscode.commands.registerCommand('open-xml-vscode-ext.open-package-externally', async (oxmlPackage: OxmlTreePackage) => {
+    vscode.env.openExternal(oxmlPackage.oxmlUri.packageUri);
+  }));
+
   const oxmlFileSystemProvider = new OxmlFileSystemProvider(packageManager);
   context.subscriptions.push(vscode.workspace.registerFileSystemProvider(OxmlUri.SCHEME, oxmlFileSystemProvider));
 
