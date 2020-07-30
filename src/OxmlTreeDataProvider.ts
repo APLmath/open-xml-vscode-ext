@@ -40,6 +40,24 @@ export class OxmlTreeDataProvider implements vscode.TreeDataProvider<OxmlTreeIte
             console.log('Before');
 
             let contents = await this.oxmlFileSystemProvider.readDirectory(element.oxmlUri.toUri());
+            // Sort directories ahead of files, then alphabetically.
+            contents.sort((content1, content2) => {
+                const type1 = content1[1] & ~vscode.FileType.SymbolicLink;
+                const type2 = content2[1] & ~vscode.FileType.SymbolicLink;
+                if (type1 != type2) {
+                    return type1 == vscode.FileType.Directory ? -1 : 1;
+                }
+
+                const name1 = content1[0];
+                const name2 = content2[0];
+                if (name1 < name2) {
+                    return -1;
+                } if (name1 > name2) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            });
             contents.forEach((item) => {
                 if (item[1] === vscode.FileType.Directory) {
                     items.push(new OxmlTreeDirectory(item[0], element.oxmlUri));
