@@ -29,7 +29,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
     const oxmlUri = OxmlUri.fromUri(uri);
     const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
 
-    let pathWithTrailingSlash = oxmlUri.partName;
+    let pathWithTrailingSlash = oxmlUri.entryName;
     if (!pathWithTrailingSlash.endsWith('/')) {
       pathWithTrailingSlash += '/';
     }
@@ -42,7 +42,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
         type: vscode.FileType.File,
         ctime: 0,
         mtime: 0,
-        size: oxmlPackage.getEntryData(oxmlUri.partName).length,
+        size: oxmlPackage.getEntryData(oxmlUri.entryName).length,
       };
     } else if (matches.length > 0) {
       return {
@@ -60,7 +60,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
     const oxmlUri = OxmlUri.fromUri(uri);
     const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
 
-    let pathWithTrailingSlash = oxmlUri.partName;
+    let pathWithTrailingSlash = oxmlUri.entryName;
     if (!pathWithTrailingSlash.endsWith('/')) {
       pathWithTrailingSlash += '/';
     }
@@ -91,7 +91,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
     const oxmlUri = OxmlUri.fromUri(uri);
     const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
     try {
-      const data = oxmlPackage.getEntryData(oxmlUri.partName);
+      const data = oxmlPackage.getEntryData(oxmlUri.entryName);
       return data;
     }
     catch {
@@ -103,7 +103,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
     const oxmlUri = OxmlUri.fromUri(uri);
     const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
 
-    oxmlPackage.writeEntryData(oxmlUri.partName, content);
+    oxmlPackage.writeEntryData(oxmlUri.entryName, content);
 
     this._savePackage(oxmlUri.packageUri, oxmlPackage);
   }
@@ -112,7 +112,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
     const oxmlUri = OxmlUri.fromUri(uri);
     const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
 
-    const pathWithTrailingSlash = oxmlUri.partName + (oxmlUri.partName.endsWith('/') ? '' : '/');
+    const pathWithTrailingSlash = oxmlUri.entryName + (oxmlUri.entryName.endsWith('/') ? '' : '/');
 
     const entryNames = oxmlPackage.getAllEntryNames();
     let entriesToDelete = entryNames.filter((name) => options.recursive ? (name + '/').startsWith(pathWithTrailingSlash) : (name + '/') === pathWithTrailingSlash);
@@ -135,9 +135,9 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
     }
 
     const oxmlPackage = await this._packageManager.getPackage(oldOxmlUri.packageUri);
-    const data = oxmlPackage.getEntryData(oldOxmlUri.partName);
-    oxmlPackage.writeEntryData(newOxmlUri.partName, data);
-    oxmlPackage.removeEntries([oldOxmlUri.partName]);
+    const data = oxmlPackage.getEntryData(oldOxmlUri.entryName);
+    oxmlPackage.writeEntryData(newOxmlUri.entryName, data);
+    oxmlPackage.removeEntries([oldOxmlUri.entryName]);
 
     this._savePackage(oldOxmlUri.packageUri, oxmlPackage);
   }

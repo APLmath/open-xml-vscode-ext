@@ -26,7 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
     const oxmlUri = OxmlUri.fromUri(uri);
     const oxmlPackage = await packageManager.getPackage(oxmlUri.packageUri);
 
-    const relationships = oxmlPackage.getRelationships(oxmlUri.partName);
+    const relationships = oxmlPackage.getRelationships(oxmlUri.entryName);
     const sortedRelationships = relationships.sort((r1, r2) => {
       const name1 = r1.targetName;
       const name2 = r2.targetName;
