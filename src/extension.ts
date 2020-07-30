@@ -7,6 +7,7 @@ import * as yauzl from 'yauzl-promise';
 import {promises as fsPromises} from 'fs';
 import { OxmlEditorProvider } from './OxmlEditorProvider';
 import { RelsDocumentLinkProvider } from './RelsDocumentLinkProvider';
+import { OxmlPackageManager } from './OxmlPackageManager';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -30,22 +31,20 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }));
 
-  context.subscriptions.push(vscode.commands.registerCommand('open-xml-vscode-ext.scratchpad', async (uri:vscode.Uri) => {
-    const zippy = await yauzl.open('/Users/andlee/Downloads/oxml-icon.pptx');
-    // const entry = await zippy.readEntry();
-    // let stream = await entry.openReadStream();
-    // //stream.setEncoding('utf-8');
+  const packageManager = new OxmlPackageManager();
 
-    // let chunks = [];
-    // for await (let chunk of stream) {
-    //   chunks.push(chunk);
-    // }
-    // console.log(chunks);
-    const entries = await zippy.readEntries();
-    entries.forEach((entry) => {console.log(entry);});
+  context.subscriptions.push(vscode.commands.registerCommand('open-xml-vscode-ext.quick-navigate-relationship', async (uri:vscode.Uri) => {
+    const oxmlUri = OxmlUri.fromUri(uri);
+    const oxmlPackage = await packageManager.getPackage(oxmlUri.packageUri);
+
+    let target = await vscode.window.showQuickPick(oxmlPackage.getRelationships(oxmlUri.partName));
+    if (target) {
+      const targetUri = new OxmlUri(oxmlUri.packageUri, target);
+      vscode.commands.executeCommand('vscode.open', targetUri.toUri());
+    }
   }));
 
-  context.subscriptions.push(vscode.workspace.registerFileSystemProvider(OxmlUri.SCHEME, new OxmlFileSystemProvider()));
+  context.subscriptions.push(vscode.workspace.registerFileSystemProvider(OxmlUri.SCHEME, new OxmlFileSystemProvider(packageManager)));
 
   context.subscriptions.push(OxmlEditorProvider.register(context));
 

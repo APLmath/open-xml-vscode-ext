@@ -2,6 +2,7 @@ import * as xmldoc from 'xmldoc';
 import * as yazl from 'yazl';
 import * as yauzl from 'yauzl-promise';
 import { TextDecoder, TextEncoder } from 'util';
+import path = require('path');
 
 interface IEntry {
   entryName: string;
@@ -59,8 +60,19 @@ class BinaryPart implements IEntry { // Could call it VerbatimPart, for cases li
 type Part = XmlPart | BinaryPart;
 
 class Relationship extends XmlEntry {
+  private _relationshipTargets: string[] = [];
+
   constructor(entryName: string, rawData: Uint8Array) {
     super(entryName, rawData);
+
+    this._document.eachChild((child) => {
+      const targetName = path.join(entryName, '../../' + child.attr['Target']);
+      this._relationshipTargets.push(targetName);
+    });
+  }
+
+  getRelationshipTargets(): string[] {
+    return this._relationshipTargets;
   }
 }
 
@@ -136,6 +148,33 @@ export class Package {
     names.forEach((name) => {
       this._entries.delete(name);
     });
+  }
+
+  getRelationships(name: string): string[] {
+    const source = this._entries.get(name);
+    if (!source) {
+      throw new Error(`Entry ${name} doesn't exist.`);
+    }
+
+    if (!(source instanceof XmlPart) && !(source instanceof BinaryPart)) {
+      throw new Error(`Entry ${name} is not a part.`);
+    }
+
+    const lastSlashIndex = name.lastIndexOf('/');
+    const basename = name.substring(lastSlashIndex + 1);
+    const expectedRelsName = name.substring(0, lastSlashIndex) + '/_rels/' + basename + ".rels";
+
+    const relationship = this._entries.get(expectedRelsName);
+    if (!relationship) {
+      // No .rels file, that's okay. Just return empty array;
+      return [];
+    }
+
+    if (!(relationship instanceof Relationship)) {
+      throw new Error(`Expected relationship entry ${expectedRelsName} is not a .rels file.`);
+    }
+
+    return relationship.getRelationshipTargets();
   }
 
   static async fromUint8Array(rawData: Uint8Array): Promise<Package> {

@@ -1,29 +1,15 @@
 import * as vscode from 'vscode';
 import { OxmlUri } from './OxmlUri';
 import * as OxmlModel from './OxmlModel';
+import { OxmlPackageManager } from './OxmlPackageManager';
 
 export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
-  private _zipMap: Map<string, Promise<OxmlModel.Package>> = new Map();
-  private async _getPackage(packageUri: vscode.Uri): Promise<OxmlModel.Package> {
-    const packageUriString = packageUri.toString();
-    let oxmlPackagePromise = this._zipMap.get(packageUriString);
-    if (!oxmlPackagePromise) {
-      async function createPackagePromise(packageUri: vscode.Uri): Promise<OxmlModel.Package> {
-        const rawData = await vscode.workspace.fs.readFile(packageUri);
-        return await OxmlModel.Package.fromUint8Array(rawData);
-      }
-      oxmlPackagePromise = createPackagePromise(packageUri);
-      this._zipMap.set(packageUriString, oxmlPackagePromise);
-    }
-    return oxmlPackagePromise;
-  }
-
   private async _savePackage(packageUri: vscode.Uri, oxmlPackage: OxmlModel.Package) {
     const data = await oxmlPackage.toUint8Array();
     vscode.workspace.fs.writeFile(packageUri, data);
   }
 
-  constructor() {
+  constructor(private _packageManager: OxmlPackageManager) {
   }
 
   private _onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
@@ -41,7 +27,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
 
   async stat(uri: vscode.Uri): Promise<vscode.FileStat> {
     const oxmlUri = OxmlUri.fromUri(uri);
-    const oxmlPackage = await this._getPackage(oxmlUri.packageUri);
+    const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
 
     let pathWithTrailingSlash = oxmlUri.partName;
     if (!pathWithTrailingSlash.endsWith('/')) {
@@ -72,7 +58,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
 
   async readDirectory(uri: vscode.Uri): Promise<[string, vscode.FileType][]> {
     const oxmlUri = OxmlUri.fromUri(uri);
-    const oxmlPackage = await this._getPackage(oxmlUri.packageUri);
+    const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
 
     let pathWithTrailingSlash = oxmlUri.partName;
     if (!pathWithTrailingSlash.endsWith('/')) {
@@ -103,7 +89,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
 
   async readFile(uri: vscode.Uri): Promise<Uint8Array> {
     const oxmlUri = OxmlUri.fromUri(uri);
-    const oxmlPackage = await this._getPackage(oxmlUri.packageUri);
+    const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
     try {
       const data = oxmlPackage.getEntryData(oxmlUri.partName);
       return data;
@@ -115,7 +101,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
 
   async writeFile(uri: vscode.Uri, content: Uint8Array, options: { create: boolean; overwrite: boolean; }): Promise<void> {
     const oxmlUri = OxmlUri.fromUri(uri);
-    const oxmlPackage = await this._getPackage(oxmlUri.packageUri);
+    const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
 
     oxmlPackage.writeEntryData(oxmlUri.partName, content);
 
@@ -123,9 +109,8 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   async delete(uri: vscode.Uri, options: { recursive: boolean; }): Promise<void> {
-    console.log(options);
     const oxmlUri = OxmlUri.fromUri(uri);
-    const oxmlPackage = await this._getPackage(oxmlUri.packageUri);
+    const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
 
     const pathWithTrailingSlash = oxmlUri.partName + (oxmlUri.partName.endsWith('/') ? '' : '/');
 
@@ -149,7 +134,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
       throw new Error('Renames can only happen within the same package.');
     }
 
-    const oxmlPackage = await this._getPackage(oldOxmlUri.packageUri);
+    const oxmlPackage = await this._packageManager.getPackage(oldOxmlUri.packageUri);
     const data = oxmlPackage.getEntryData(oldOxmlUri.partName);
     oxmlPackage.writeEntryData(newOxmlUri.partName, data);
     oxmlPackage.removeEntries([oldOxmlUri.partName]);

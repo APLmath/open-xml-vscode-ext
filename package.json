@@ -27,8 +27,9 @@
         "title": "Open document in workspace"
       },
       {
-        "command": "open-xml-vscode-ext.scratchpad",
-        "title": "Scratchpad for testing..."
+        "command": "open-xml-vscode-ext.quick-navigate-relationship",
+        "title": "Navigate relationship",
+        "icon": "$(link)"
       }
     ],
     "customEditors": [
@@ -55,6 +56,13 @@
           "command": "open-xml-vscode-ext.open-in-workspace",
           "group": "navigation",
           "when": "resourceExtname == .docx || resourceExtname == .pptx || resourceExtname == .xlsx"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "open-xml-vscode-ext.quick-navigate-relationship",
+          "group": "navigation",
+          "when": "resourceScheme == oxml"
         }
       ]
     }
