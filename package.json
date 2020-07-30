@@ -17,7 +17,8 @@
   "activationEvents": [
     "onCommand:open-xml-vscode-ext.open-in-workspace",
     "onCustomEditor:open-xml-vscode-ext.oxml-file-editor",
-    "onFileSystem:oxml"
+    "onFileSystem:oxml",
+    "onView:open-xml-vscode-ext.open-xml-documents"
   ],
   "main": "./out/extension.js",
   "contributes": {
@@ -63,6 +64,15 @@
           "command": "open-xml-vscode-ext.quick-navigate-relationship",
           "group": "navigation",
           "when": "resourceScheme == oxml"
+        }
+      ]
+    },
+    "views": {
+      "explorer": [
+        {
+          "id": "open-xml-vscode-ext.open-xml-documents",
+          "name": "Open XML Documents",
+          "contextualTitle": "Package Explorer"
         }
       ]
     }

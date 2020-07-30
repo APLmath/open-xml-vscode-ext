@@ -25,7 +25,7 @@ export class RelsDocumentLinkProvider implements vscode.DocumentLinkProvider {
       if (tag.name === 'Relationship') {
         currentRelStart = parser.position;
       }
-    }
+    };
 
     parser.onattribute = (attr) => {
       if (parser.tag.name === 'Relationship' && attr.name === 'Target') {
@@ -60,3 +60,5 @@ export class RelsDocumentLinkProvider implements vscode.DocumentLinkProvider {
     context.subscriptions.push(disposable);
   }
 }
+
+// cspell:ignore onattribute onopentagstart

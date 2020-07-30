@@ -3,11 +3,10 @@
 import * as vscode from 'vscode';
 import {OxmlUri} from './OxmlUri';
 import {OxmlFileSystemProvider} from './OxmlFileSystemProvider';
-import * as yauzl from 'yauzl-promise';
-import {promises as fsPromises} from 'fs';
 import { OxmlEditorProvider } from './OxmlEditorProvider';
 import { RelsDocumentLinkProvider } from './RelsDocumentLinkProvider';
 import { OxmlPackageManager } from './OxmlPackageManager';
+import { OxmlTreeDataProvider } from './OxmlTreeDataProvider';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -70,11 +69,17 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }));
 
-  context.subscriptions.push(vscode.workspace.registerFileSystemProvider(OxmlUri.SCHEME, new OxmlFileSystemProvider(packageManager)));
+  const oxmlFileSystemProvider = new OxmlFileSystemProvider(packageManager);
+  context.subscriptions.push(vscode.workspace.registerFileSystemProvider(OxmlUri.SCHEME, oxmlFileSystemProvider));
 
   context.subscriptions.push(OxmlEditorProvider.register(context));
 
   RelsDocumentLinkProvider.register(context);
+  
+  context.subscriptions.push(vscode.window.registerTreeDataProvider(
+    'open-xml-vscode-ext.open-xml-documents',
+    new OxmlTreeDataProvider(oxmlFileSystemProvider)
+  ));
 }
 
 // this method is called when your extension is deactivated
