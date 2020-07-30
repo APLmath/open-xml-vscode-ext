@@ -59,20 +59,30 @@ class BinaryPart implements IEntry { // Could call it VerbatimPart, for cases li
 
 type Part = XmlPart | BinaryPart;
 
+export interface Relationship {
+  id: string;
+  type: string;
+  targetName: string;
+}
+
 class RelsFile extends XmlEntry {
-  private _relationshipTargets: string[] = [];
+  private _relationships: Relationship[] = [];
 
   constructor(entryName: string, rawData: Uint8Array) {
     super(entryName, rawData);
 
     this._document.eachChild((child) => {
       const targetName = path.join(entryName, '../../' + child.attr['Target']);
-      this._relationshipTargets.push(targetName);
+      this._relationships.push({
+        id: child.attr['Id'],
+        type: child.attr['Type'],
+        targetName: targetName
+      });
     });
   }
 
-  getRelationshipTargets(): string[] {
-    return this._relationshipTargets;
+  getRelationshipTargets(): Relationship[] {
+    return this._relationships;
   }
 }
 
@@ -150,7 +160,7 @@ export class Package {
     });
   }
 
-  getRelationships(name: string): string[] {
+  getRelationships(name: string): Relationship[] {
     const source = this._entries.get(name);
     if (!source) {
       throw new Error(`Entry ${name} doesn't exist.`);

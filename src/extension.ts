@@ -37,9 +37,35 @@ export function activate(context: vscode.ExtensionContext) {
     const oxmlUri = OxmlUri.fromUri(uri);
     const oxmlPackage = await packageManager.getPackage(oxmlUri.packageUri);
 
-    let target = await vscode.window.showQuickPick(oxmlPackage.getRelationships(oxmlUri.partName));
-    if (target) {
-      const targetUri = new OxmlUri(oxmlUri.packageUri, target);
+    const relationships = oxmlPackage.getRelationships(oxmlUri.partName);
+    const sortedRelationships = relationships.sort((r1, r2) => {
+      const name1 = r1.targetName;
+      const name2 = r2.targetName;
+
+      if (name1 < name2) {
+        return -1;
+      } else if (name1 > name2) {
+        return 1;
+      } else {
+        return 0;
+      }
+    });
+
+    const quickPickItems = sortedRelationships.map((relationship) => {
+      return {
+        label: relationship.targetName,
+        description: relationship.id,
+        detail: relationship.type,
+      };
+    });
+
+    let pickedItem = await vscode.window.showQuickPick(quickPickItems, {
+      matchOnDescription: true,
+      matchOnDetail: true,
+      placeHolder: quickPickItems.length > 0 ? 'Jump to related part...' : 'This part has no outgoing relationships'
+    });
+    if (pickedItem) {
+      const targetUri = new OxmlUri(oxmlUri.packageUri, pickedItem.label);
       vscode.commands.executeCommand('vscode.open', targetUri.toUri());
     }
   }));
