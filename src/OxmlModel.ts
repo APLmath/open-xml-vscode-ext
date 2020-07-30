@@ -128,6 +128,16 @@ export class Package {
     this._addEntry(name, rawData);
   }
 
+  removeEntries(names: string[]) {
+    if (names.find((name) => name === CONTENT_TYPES_ENTRY_NAME)) {
+      throw new Error(`You cannot remove the ${CONTENT_TYPES_ENTRY_NAME} entry.`);
+    }
+
+    names.forEach((name) => {
+      this._entries.delete(name);
+    });
+  }
+
   static async fromUint8Array(rawData: Uint8Array): Promise<Package> {
     const buffer = Buffer.from(rawData);
     const zippedPackage = await yauzl.fromBuffer(buffer);

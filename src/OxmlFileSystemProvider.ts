@@ -18,6 +18,11 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
     return oxmlPackagePromise;
   }
 
+  private async _savePackage(packageUri: vscode.Uri, oxmlPackage: OxmlModel.Package) {
+    const data = await oxmlPackage.toUint8Array();
+    vscode.workspace.fs.writeFile(packageUri, data);
+  }
+
   constructor() {
   }
 
@@ -53,13 +58,15 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
         mtime: 0,
         size: oxmlPackage.getEntryData(oxmlUri.partName).length,
       };
-    } else {
+    } else if (matches.length > 0) {
       return {
         type: vscode.FileType.Directory,
         ctime: 0,
         mtime: 0,
         size: matches.length,
       };
+    } else {
+      throw vscode.FileSystemError.FileNotFound();
     }
   }
 
@@ -84,7 +91,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
     });
 
     if (children.size === 0) {
-      throw vscode.FileSystemError.FileNotFound;
+      throw vscode.FileSystemError.FileNotFound();
     }
 
     return Array.from(children);
@@ -102,7 +109,7 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
       return data;
     }
     catch {
-      throw vscode.FileSystemError.FileNotFound;
+      throw vscode.FileSystemError.FileNotFound();
     }
   }
 
@@ -112,15 +119,41 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
 
     oxmlPackage.writeEntryData(oxmlUri.partName, content);
 
-    const data = await oxmlPackage.toUint8Array();
-    vscode.workspace.fs.writeFile(oxmlUri.packageUri, data);
+    this._savePackage(oxmlUri.packageUri, oxmlPackage);
   }
 
-  delete(uri: vscode.Uri, options: { recursive: boolean; }): void | Thenable<void> {
-    throw vscode.FileSystemError.NoPermissions('Readonly to start');
+  async delete(uri: vscode.Uri, options: { recursive: boolean; }): Promise<void> {
+    console.log(options);
+    const oxmlUri = OxmlUri.fromUri(uri);
+    const oxmlPackage = await this._getPackage(oxmlUri.packageUri);
+
+    const pathWithTrailingSlash = oxmlUri.partName + (oxmlUri.partName.endsWith('/') ? '' : '/');
+
+    const entryNames = oxmlPackage.getAllEntryNames();
+    let entriesToDelete = entryNames.filter((name) => options.recursive ? (name + '/').startsWith(pathWithTrailingSlash) : (name + '/') === pathWithTrailingSlash);
+
+    if (entriesToDelete.length === 0) {
+      throw vscode.FileSystemError.FileNotFound();
+    }
+
+    oxmlPackage.removeEntries(entriesToDelete);
+
+    this._savePackage(oxmlUri.packageUri, oxmlPackage);
   }
 
-  rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean; }): void | Thenable<void> {
-    throw vscode.FileSystemError.NoPermissions('Readonly to start');
+  async rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean; }): Promise<void> {
+    console.log(options);
+    const oldOxmlUri = OxmlUri.fromUri(oldUri);
+    const newOxmlUri = OxmlUri.fromUri(newUri);
+    if (oldOxmlUri.packageUri.toString() !== newOxmlUri.packageUri.toString()) {
+      throw new Error('Renames can only happen within the same package.');
+    }
+
+    const oxmlPackage = await this._getPackage(oldOxmlUri.packageUri);
+    const data = oxmlPackage.getEntryData(oldOxmlUri.partName);
+    oxmlPackage.writeEntryData(newOxmlUri.partName, data);
+    oxmlPackage.removeEntries([oldOxmlUri.partName]);
+
+    this._savePackage(oldOxmlUri.packageUri, oxmlPackage);
   }
 }
