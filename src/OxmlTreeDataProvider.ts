@@ -11,7 +11,6 @@ export class OxmlTreeDataProvider implements vscode.TreeDataProvider<OxmlItem>
 {
     private oxmlPackages: PackageInfo[];
 
-
     constructor (private oxmlFileSystemProvider : OxmlFileSystemProvider)
     {
         this.oxmlPackages = [];
@@ -132,5 +131,10 @@ class OxmlContent extends vscode.TreeItem {
         super(name);
         this.oxmlUri = new OxmlUri(parentOxmlUri.packageUri, parentOxmlUri.partName + name);
         this.resourceUri = this.oxmlUri.toUri();
+        this.command = {
+            command: 'vscode.open',
+            arguments: [ this.resourceUri],
+            title: "Open OXML Content"
+        };  
     }
 }
