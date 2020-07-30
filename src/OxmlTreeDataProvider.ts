@@ -7,43 +7,45 @@ interface PackageInfo {
     fileName: string
 }
 
-export class OxmlTreeDataProvider implements vscode.TreeDataProvider<OxmlItem> 
+export class OxmlTreeDataProvider implements vscode.TreeDataProvider<OxmlTreeItem> 
 {
+	private _onDidChangeTreeData: vscode.EventEmitter<any> = new vscode.EventEmitter<any>();
+	readonly onDidChangeTreeData: vscode.Event<any> = this._onDidChangeTreeData.event;
+
+	public refresh(): any {
+		this._onDidChangeTreeData.fire(undefined);
+	}
+
     private oxmlPackages: PackageInfo[];
 
     constructor (private oxmlFileSystemProvider : OxmlFileSystemProvider)
     {
         this.oxmlPackages = [];
-
-        // Test code, add a couple of fake packages
-        this.addOxmlPackage(vscode.Uri.file('/d:/foo/foo.docx'));
-        this.addOxmlPackage(vscode.Uri.file('/d:/foo/Empty.pptx'));
-
     }
 
-    getTreeItem(element: OxmlItem): OxmlItem {
+    getTreeItem(element: OxmlTreeItem): OxmlTreeItem {
         return element;
       }
 
-    async getChildren(element?: OxmlItem): Promise<OxmlItem[]> {
+    async getChildren(element?: OxmlTreeItem): Promise<OxmlTreeItem[]> {
         if (!element) {
-            let packages: OxmlPackage[] = [];
+            let packages: OxmlTreePackage[] = [];
             this.oxmlPackages.forEach((oxmlPackage) => {
-                packages.push(new OxmlPackage(oxmlPackage));
+                packages.push(new OxmlTreePackage(oxmlPackage));
             });
             return Promise.resolve(packages);
         }
         else if (element.type === 'package' || element.type === 'directory') {
-            let items : OxmlItem[] = [];
+            let items : OxmlTreeItem[] = [];
             console.log('Before');
 
             let contents = await this.oxmlFileSystemProvider.readDirectory(element.oxmlUri.toUri());
             contents.forEach((item) => {
                 if (item[1] === vscode.FileType.Directory) {
-                    items.push(new OxmlDirectory(item[0], element.oxmlUri));
+                    items.push(new OxmlTreeDirectory(item[0], element.oxmlUri));
                 }
                 else {
-                    items.push(new OxmlContent(item[0], element.oxmlUri));
+                    items.push(new OxmlTreeContent(item[0], element.oxmlUri));
                 }
             });
             return items;
@@ -65,55 +67,64 @@ export class OxmlTreeDataProvider implements vscode.TreeDataProvider<OxmlItem>
 
             for (let i = 0; i < length; i += 1) {
                 const currentPackage = this.oxmlPackages[i];
-                if (currentPackage.fileName === undefined) {
-                    this.oxmlPackages.splice(i, 0, newPackageInfo);
-                    wasAdded = true;
-                    break;
-                }
-                if ((previousComparisonName < newComparisonName) && (newComparisonName < currentPackage.fileName.toLowerCase()))
-                {
+                if ((currentPackage.fileName === undefined) ||
+                   ((previousComparisonName < newComparisonName) && (newComparisonName < currentPackage.fileName.toLowerCase())))
+                 {
                     this.oxmlPackages.splice(i, 0, newPackageInfo);
                     wasAdded = true;
                     break;
                 }
             }
         }
-
         if (!wasAdded) {
             this.oxmlPackages.push(newPackageInfo);
         }
+        this.refresh();
     }
+
+    closeOxmlPackage(oxmlUri: OxmlUri) : void {
+        const length = this.oxmlPackages.length;
+        for (let i = 0; i < length; i += 1) {
+            if (this.oxmlPackages[i].oxmlUri === oxmlUri) {
+                this.oxmlPackages = this.oxmlPackages.slice(i, 1);
+                break;
+            }
+        }
+        this.refresh();
+    }
+ 
 }
 
-interface Item extends vscode.TreeItem {
+interface TreeItem extends vscode.TreeItem {
     oxmlUri: OxmlUri;
 }
 
-interface Package extends Item {
+interface TreePackage extends TreeItem {
     type: 'package',
 }
 
-interface Directory extends Item {
+interface TreeDirectory extends TreeItem {
      type: 'directory',
 }
 
-interface Content extends Item {
+interface TreeContent extends TreeItem {
      type: 'content'
 }
 
-type OxmlItem = Package | Directory | Content;
+type OxmlTreeItem = TreePackage | TreeDirectory | TreeContent;
 
-class OxmlPackage extends vscode.TreeItem implements Package {
+export class OxmlTreePackage extends vscode.TreeItem implements TreePackage {
     public type : 'package' = 'package';
     public oxmlUri : OxmlUri;
 
     constructor(packageInfo: PackageInfo) {
         super(packageInfo.fileName, vscode.TreeItemCollapsibleState.Collapsed);
         this.oxmlUri = packageInfo.oxmlUri;
+        this.contextValue = 'oxmlPackage';
     }
 }
 
-class OxmlDirectory extends vscode.TreeItem implements Directory {
+class OxmlTreeDirectory extends vscode.TreeItem implements TreeDirectory {
     public type: 'directory' = 'directory';
     public oxmlUri: OxmlUri;
 
@@ -123,7 +134,7 @@ class OxmlDirectory extends vscode.TreeItem implements Directory {
     }
 }
 
-class OxmlContent extends vscode.TreeItem {
+class OxmlTreeContent extends vscode.TreeItem {
     public type: 'content' = 'content';
     public oxmlUri: OxmlUri;
 

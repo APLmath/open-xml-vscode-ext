@@ -6,7 +6,7 @@ import {OxmlFileSystemProvider} from './OxmlFileSystemProvider';
 import { OxmlEditorProvider } from './OxmlEditorProvider';
 import { RelsDocumentLinkProvider } from './RelsDocumentLinkProvider';
 import { OxmlPackageManager } from './OxmlPackageManager';
-import { OxmlTreeDataProvider } from './OxmlTreeDataProvider';
+import { OxmlTreeDataProvider, OxmlTreePackage } from './OxmlTreeDataProvider';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -19,16 +19,6 @@ export function activate(context: vscode.ExtensionContext) {
   // The command has been defined in the package.json file
   // Now provide the implementation of the command with registerCommand
   // The commandId parameter must match the command field in package.json
-
-  context.subscriptions.push(vscode.commands.registerCommand('open-xml-vscode-ext.open-in-workspace', (uri:vscode.Uri) => {
-    if (uri) {
-      const pathComponents = uri.path.split('/');
-      vscode.workspace.updateWorkspaceFolders(vscode.workspace.workspaceFolders?.length || 0, 0, {
-        uri: new OxmlUri(uri, '/').toUri(),
-        name: pathComponents[pathComponents.length - 1]
-      });
-    }
-  }));
 
   const packageManager = new OxmlPackageManager();
 
@@ -76,10 +66,27 @@ export function activate(context: vscode.ExtensionContext) {
 
   RelsDocumentLinkProvider.register(context);
   
+  const treeDataProvider = new OxmlTreeDataProvider(oxmlFileSystemProvider);
   context.subscriptions.push(vscode.window.registerTreeDataProvider(
     'open-xml-vscode-ext.open-xml-documents',
-    new OxmlTreeDataProvider(oxmlFileSystemProvider)
+    treeDataProvider
   ));
+
+  context.subscriptions.push(vscode.commands.registerCommand('open-xml-vscode-ext.open-in-workspace', (uri:vscode.Uri) => {
+    if (uri) {
+      const pathComponents = uri.path.split('/');
+      treeDataProvider.addOxmlPackage(uri);
+    }
+  }));
+
+  context.subscriptions.push(vscode.commands.registerCommand('open-xml-vscode-ext.close-oxml-package', (pkg: OxmlTreePackage ) => {
+    if (pkg) {
+      treeDataProvider.closeOxmlPackage(pkg.oxmlUri);
+    }
+  }));
+
+
+
 }
 
 // this method is called when your extension is deactivated

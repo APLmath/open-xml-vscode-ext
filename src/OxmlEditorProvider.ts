@@ -31,10 +31,10 @@ export class OxmlEditorProvider implements vscode.CustomReadonlyEditorProvider<O
     {
         webviewPanel.webview.html = "\
         <h1>Open XML File</h1>\
-        <p>Your file has been opened at the bottom of the Explorer window.</p>\
+        <p>Your file has been opened in the Open XML Documents Window in the Explorer.</p>\
         <p>Expand the file and you can edit the file sections as XML files.</p>";
 
-        vscode.commands.executeCommand("open-xml-vscode-ext.open-in-workspace", document.uri);
+        vscode.commands.executeCommand("    open-xml-vscode-ext.open-in-workspace", document.uri);
 	}
 
 

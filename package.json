@@ -25,12 +25,16 @@
     "commands": [
       {
         "command": "open-xml-vscode-ext.open-in-workspace",
-        "title": "Open document in workspace"
+        "title": "Open OXML Document"
       },
       {
         "command": "open-xml-vscode-ext.quick-navigate-relationship",
         "title": "Jump to related part",
         "icon": "$(link)"
+      },
+      {
+        "command": "open-xml-vscode-ext.close-oxml-package",
+        "title": "Close package"
       }
     ],
     "customEditors": [
@@ -64,6 +68,13 @@
           "command": "open-xml-vscode-ext.quick-navigate-relationship",
           "group": "navigation",
           "when": "resourceScheme == oxml"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "open-xml-vscode-ext.close-oxml-package",
+          "when": "view == open-xml-vscode-ext.open-xml-documents && viewItem == oxmlPackage",
+          "group": "inline"
         }
       ]
     },
