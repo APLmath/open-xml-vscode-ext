@@ -59,7 +59,7 @@ class BinaryPart implements IEntry { // Could call it VerbatimPart, for cases li
 
 type Part = XmlPart | BinaryPart;
 
-class Relationship extends XmlEntry {
+class RelsFile extends XmlEntry {
   private _relationshipTargets: string[] = [];
 
   constructor(entryName: string, rawData: Uint8Array) {
@@ -86,7 +86,7 @@ class ContentTypes extends XmlEntry {
   createEntry(name: string, rawData: Uint8Array) {
     // TODO: Actually use the content types data to determine each of these.
     if (name.endsWith('.rels')) {
-      return new Relationship(name, rawData);
+      return new RelsFile(name, rawData);
     } else if (name.endsWith('.xml')) {
       return new XmlPart(name, rawData);
     } else {
@@ -170,7 +170,7 @@ export class Package {
       return [];
     }
 
-    if (!(relationship instanceof Relationship)) {
+    if (!(relationship instanceof RelsFile)) {
       throw new Error(`Expected relationship entry ${expectedRelsName} is not a .rels file.`);
     }
 

@@ -28,7 +28,7 @@
       },
       {
         "command": "open-xml-vscode-ext.quick-navigate-relationship",
-        "title": "Navigate relationship",
+        "title": "Jump to related part",
         "icon": "$(link)"
       }
     ],
