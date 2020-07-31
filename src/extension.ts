@@ -60,12 +60,7 @@ export function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(OxmlEditorProvider.register(context));
 
   RelsDocumentLinkProvider.register(context);
-  
-  const treeDataProvider = new OxmlTreeDataProvider(oxmlFileSystemProvider);
-  context.subscriptions.push(vscode.window.registerTreeDataProvider(
-    'open-xml-vscode-ext.open-xml-documents',
-    treeDataProvider
-  ));
+  const treeDataProvider = OxmlTreeDataProvider.register(context, oxmlFileSystemProvider);
 
   context.subscriptions.push(vscode.commands.registerCommand('open-xml-vscode-ext.open-in-workspace', (uri:vscode.Uri) => {
     if (uri) {
