@@ -103,7 +103,7 @@ export class OxmlTreeDataProvider implements vscode.TreeDataProvider<OxmlTreeIte
         const length = this.oxmlPackages.length;
         for (let i = 0; i < length; i += 1) {
             if (this.oxmlPackages[i].oxmlUri === oxmlUri) {
-                this.oxmlPackages = this.oxmlPackages.slice(i, 1);
+                this.oxmlPackages.splice(i, 1);
                 break;
             }
         }

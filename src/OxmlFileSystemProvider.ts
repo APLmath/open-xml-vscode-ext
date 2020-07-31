@@ -127,7 +127,6 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
   }
 
   async rename(oldUri: vscode.Uri, newUri: vscode.Uri, options: { overwrite: boolean; }): Promise<void> {
-    console.log(options);
     const oldOxmlUri = OxmlUri.fromUri(oldUri);
     const newOxmlUri = OxmlUri.fromUri(newUri);
     if (oldOxmlUri.packageUri.toString() !== newOxmlUri.packageUri.toString()) {
