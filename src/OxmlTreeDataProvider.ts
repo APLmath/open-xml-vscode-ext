@@ -37,7 +37,6 @@ export class OxmlTreeDataProvider implements vscode.TreeDataProvider<OxmlTreeIte
         }
         else if (element.type === 'package' || element.type === 'directory') {
             let items : OxmlTreeItem[] = [];
-            console.log('Before');
 
             let contents = await this.oxmlFileSystemProvider.readDirectory(element.oxmlUri.toUri());
             // Sort directories ahead of files, then alphabetically.
