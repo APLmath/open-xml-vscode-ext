@@ -32,8 +32,33 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
   }
 
   /**
-   * "Generic" tree traversal helpers.
+   * General functions.
    */
+
+  register(context: vscode.ExtensionContext): vscode.Disposable {
+    const disposables:vscode.Disposable[] = [];
+
+    disposables.push(vscode.workspace.registerFileSystemProvider(OxmlUri.SCHEME, this));
+
+    disposables.push(vscode.window.registerTreeDataProvider('open-xml-vscode-ext.open-xml-documents', this));
+
+    const treeView: vscode.TreeView<OxmlTreeItem> = vscode.window.createTreeView('open-xml-vscode-ext.open-xml-documents', {
+        showCollapseAll: true,
+        treeDataProvider: this
+    });
+
+    disposables.push(vscode.window.onDidChangeActiveTextEditor((editor) => {
+      if (editor)
+      {
+        const editorUri = editor.document.uri;
+
+        const selectedItem = OxmlTreeContent.fromOxmlUri(OxmlUri.fromUri(editorUri));
+        treeView.reveal(selectedItem);
+      }
+    }));
+
+    return vscode.Disposable.from(...disposables);
+}
 
   async openPackage(packageUri: vscode.Uri) {
     this._packageManager;
@@ -306,45 +331,6 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
       }
       this.refresh();
   }
-
-  register(context: vscode.ExtensionContext): vscode.Disposable {
-      const disposables:vscode.Disposable[] = [];
-
-      disposables.push(vscode.workspace.registerFileSystemProvider(OxmlUri.SCHEME, this));
-
-      disposables.push(vscode.window.registerTreeDataProvider(
-          'open-xml-vscode-ext.open-xml-documents',
-          this
-      ));
-
-      const treeView: vscode.TreeView<OxmlTreeItem> = vscode.window.createTreeView('open-xml-vscode-ext.open-xml-documents', {
-          showCollapseAll: true,
-          treeDataProvider: this
-      });
-
-      disposables.push(vscode.window.onDidChangeActiveTextEditor((editor) => {
-          if (editor)
-          {
-              const editorUri = editor.document.uri;
-
-              const selectedItem = OxmlTreeContent.fromOxmlUri(OxmlUri.fromUri(editorUri));
-              treeView.reveal(selectedItem);
-          }
-      }));
-
-      return vscode.Disposable.from(...disposables);
-  }
-
-
-  // onDidChangeTreeData?: vscode.Event<void | TreePackage | TreeDirectory | TreeContent | null | undefined> | undefined;
-
-  // getTreeItem(element: OxmlTreeItem): vscode.TreeItem | Thenable<vscode.TreeItem> {
-  //   throw new Error("Method not implemented.");
-  // }
-
-  // getChildren(element?: TreePackage | TreeDirectory | TreeContent | undefined): vscode.ProviderResult<OxmlTreeItem[]> {
-  //   throw new Error("Method not implemented.");
-  // }
 }
 
 export class OxmlTreePackage extends vscode.TreeItem implements TreePackage {
