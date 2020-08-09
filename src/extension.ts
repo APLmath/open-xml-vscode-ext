@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import {OxmlUri} from './OxmlUri';
-import {OxmlPackageProvider} from './OxmlFileSystemProvider';
+import {OxmlPackageProvider} from './OxmlPackageProvider';
 import { OxmlEditorProvider } from './OxmlEditorProvider';
 import { RelsDocumentLinkProvider } from './RelsDocumentLinkProvider';
 import { OxmlPackageManager } from './OxmlPackageManager';
