@@ -3,7 +3,7 @@ import { OxmlUri } from './OxmlUri';
 import * as OxmlModel from './OxmlModel';
 import { OxmlPackageManager } from './OxmlPackageManager';
 
-export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
+export class OxmlPackageProvider implements vscode.FileSystemProvider {
 
   constructor(private _packageManager: OxmlPackageManager) {
   }

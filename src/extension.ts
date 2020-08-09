@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import {OxmlUri} from './OxmlUri';
-import {OxmlFileSystemProvider} from './OxmlFileSystemProvider';
+import {OxmlPackageProvider} from './OxmlFileSystemProvider';
 import { OxmlEditorProvider } from './OxmlEditorProvider';
 import { RelsDocumentLinkProvider } from './RelsDocumentLinkProvider';
 import { OxmlPackageManager } from './OxmlPackageManager';
@@ -54,7 +54,7 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.env.openExternal(oxmlPackage.oxmlUri.packageUri);
   }));
 
-  const oxmlFileSystemProvider = new OxmlFileSystemProvider(packageManager);
+  const oxmlFileSystemProvider = new OxmlPackageProvider(packageManager);
   context.subscriptions.push(vscode.workspace.registerFileSystemProvider(OxmlUri.SCHEME, oxmlFileSystemProvider));
 
   context.subscriptions.push(OxmlEditorProvider.register(context));

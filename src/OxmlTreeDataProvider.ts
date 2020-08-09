@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import {OxmlUri} from './OxmlUri';
-import { OxmlFileSystemProvider } from './OxmlFileSystemProvider';
+import { OxmlPackageProvider } from './OxmlFileSystemProvider';
 
 interface PackageInfo {
     oxmlUri: OxmlUri,
@@ -18,7 +18,7 @@ export class OxmlTreeDataProvider implements vscode.TreeDataProvider<OxmlTreeIte
 
     private oxmlPackages: PackageInfo[];
 
-    constructor (private oxmlFileSystemProvider : OxmlFileSystemProvider)
+    constructor (private oxmlFileSystemProvider : OxmlPackageProvider)
     {
         this.oxmlPackages = [];
 
@@ -142,7 +142,7 @@ export class OxmlTreeDataProvider implements vscode.TreeDataProvider<OxmlTreeIte
         this.refresh();
     }
 
-    static register(context: vscode.ExtensionContext, oxmlFileSystemProvider: OxmlFileSystemProvider): OxmlTreeDataProvider {
+    static register(context: vscode.ExtensionContext, oxmlFileSystemProvider: OxmlPackageProvider): OxmlTreeDataProvider {
         const treeDataProvider = new OxmlTreeDataProvider(oxmlFileSystemProvider);
         context.subscriptions.push(vscode.window.registerTreeDataProvider(
             'open-xml-vscode-ext.open-xml-documents',
