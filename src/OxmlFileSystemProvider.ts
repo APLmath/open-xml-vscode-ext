@@ -4,12 +4,25 @@ import * as OxmlModel from './OxmlModel';
 import { OxmlPackageManager } from './OxmlPackageManager';
 
 export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
+
+  constructor(private _packageManager: OxmlPackageManager) {
+  }
+
+  /**
+   * "Generic" tree traversal helpers.
+   */
+
+  async openPackage(packageUri: vscode.Uri) {
+    this._packageManager;
+  }
+
+  /**
+   * vscode.FileSystemProvider implementations.
+   */
+
   private async _savePackage(packageUri: vscode.Uri, oxmlPackage: OxmlModel.Package) {
     const data = await oxmlPackage.toUint8Array();
     vscode.workspace.fs.writeFile(packageUri, data);
-  }
-
-  constructor(private _packageManager: OxmlPackageManager) {
   }
 
   private _onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
@@ -140,4 +153,8 @@ export class OxmlFileSystemProvider implements vscode.FileSystemProvider {
 
     this._savePackage(oldOxmlUri.packageUri, oxmlPackage);
   }
+
+  /**
+   * vscode.TreeDataProvider implementations.
+   */
 }
