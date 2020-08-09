@@ -54,24 +54,23 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.env.openExternal(oxmlPackage.oxmlUri.packageUri);
   }));
 
-  const oxmlFileSystemProvider = new OxmlPackageProvider(packageManager);
-  context.subscriptions.push(vscode.workspace.registerFileSystemProvider(OxmlUri.SCHEME, oxmlFileSystemProvider));
+  const oxmlPackageProvider = new OxmlPackageProvider(packageManager);
+  context.subscriptions.push(oxmlPackageProvider.register(context));
 
   context.subscriptions.push(OxmlEditorProvider.register(context));
 
   RelsDocumentLinkProvider.register(context);
-  const treeDataProvider = OxmlTreeDataProvider.register(context, oxmlFileSystemProvider);
 
   context.subscriptions.push(vscode.commands.registerCommand('open-xml-vscode-ext.open-in-workspace', (uri:vscode.Uri) => {
     if (uri) {
       const pathComponents = uri.path.split('/');
-      treeDataProvider.addOxmlPackage(uri);
+      oxmlPackageProvider.addOxmlPackage(uri);
     }
   }));
 
   context.subscriptions.push(vscode.commands.registerCommand('open-xml-vscode-ext.close-oxml-package', (pkg: OxmlTreePackage ) => {
     if (pkg) {
-      treeDataProvider.closeOxmlPackage(pkg.oxmlUri);
+      oxmlPackageProvider.closeOxmlPackage(pkg.oxmlUri);
     }
   }));
 
