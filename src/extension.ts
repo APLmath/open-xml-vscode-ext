@@ -2,7 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { OxmlUri } from './OxmlUri';
-import { OxmlPackageProvider, OxmlTreePackage } from './OxmlPackageProvider';
+import { OxmlPackageProvider, IOxmlTreeItem } from './OxmlPackageProvider';
 import { OxmlEditorProvider } from './OxmlEditorProvider';
 import { RelsDocumentLinkProvider } from './RelsDocumentLinkProvider';
 import { OxmlPackageManager } from './OxmlPackageManager';
@@ -49,7 +49,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }));
 
-  context.subscriptions.push(vscode.commands.registerCommand('open-xml-vscode-ext.open-package-externally', async (oxmlPackage: OxmlTreePackage) => {
+  context.subscriptions.push(vscode.commands.registerCommand('open-xml-vscode-ext.open-package-externally', async (oxmlPackage: IOxmlTreeItem) => {
     vscode.env.openExternal(oxmlPackage.oxmlUri.packageUri);
   }));
 
@@ -67,7 +67,7 @@ export function activate(context: vscode.ExtensionContext) {
     }
   }));
 
-  context.subscriptions.push(vscode.commands.registerCommand('open-xml-vscode-ext.close-oxml-package', (pkg: OxmlTreePackage ) => {
+  context.subscriptions.push(vscode.commands.registerCommand('open-xml-vscode-ext.close-oxml-package', (pkg: IOxmlTreeItem ) => {
     if (pkg) {
       oxmlPackageProvider.closeOxmlPackage(pkg.oxmlUri);
     }

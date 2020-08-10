@@ -2,30 +2,15 @@ import * as vscode from 'vscode';
 import { OxmlUri } from './OxmlUri';
 import * as OxmlModel from './OxmlModel';
 import { OxmlPackageManager } from './OxmlPackageManager';
-import { toNamespacedPath } from 'path';
 
-interface PackageInfo {
-  oxmlUri: OxmlUri,
-  fileName: string
+interface ILeafNode {
+  type: 'LEAF';
 }
 
-interface IOxmlTreeItem extends vscode.TreeItem {
-  oxmlUri: OxmlUri;
+interface IDirNode {
+  type: 'DIR';
+  children: [string, 'LEAF' | 'DIR'][];
 }
-
-interface TreePackage extends IOxmlTreeItem {
-  type: 'package',
-}
-
-interface TreeDirectory extends IOxmlTreeItem {
-  type: 'directory',
-}
-
-interface TreeContent extends IOxmlTreeItem {
-  type: 'content'
-}
-
-type OxmlTreeItem = TreePackage | TreeDirectory | TreeContent;
 
 export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.TreeDataProvider<OxmlTreeItem> {
 
@@ -36,15 +21,11 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
    * General functions.
    */
 
-  private _isLeaf(oxmlUri: OxmlUri): boolean {
-    return !oxmlUri.entryName.endsWith('/');
-  }
-
   // Returns array of strings of immediate child names, but with trailing slash if child is directory.
-  private async _getChildNames(oxmlUri: OxmlUri): Promise<string[]> {
-    if (this._isLeaf(oxmlUri)) {
-      throw new Error(`URI ${oxmlUri.toUri().toString()} is a leaf node.`);
-    }
+  private async _getNodeInfo(oxmlUri: OxmlUri): Promise<ILeafNode | IDirNode> {
+    // if (this._isLeaf(oxmlUri)) {
+    //   throw new Error(`URI ${oxmlUri.toUri().toString()} is a leaf node.`);
+    // }
 
     const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
 
@@ -54,17 +35,36 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
     }
 
     const entryNames = oxmlPackage.getAllEntryNames();
-    const children = new Set<string>();
+    const matches: string[] = [];
     entryNames.forEach((entryName) => {
+      entryName += '/';
       if (entryName.startsWith(pathWithTrailingSlash)) {
         const remainderPath = entryName.substring(pathWithTrailingSlash.length);
-        const pathComponents = remainderPath.split('/');
-        const childName = pathComponents[0];
-        children.add(childName + (pathComponents.length === 1 ? '' : '/'));
+        matches.push(remainderPath);
       }
     });
 
-    return Array.from(children);
+    if (matches.length === 1 && matches[0] === '') {
+      return {
+        type: 'LEAF'
+      };
+    } else {
+      const children = new Map<string, 'LEAF' | 'DIR'>();
+      matches.forEach((match) => {
+        match = match.substring(0, match.length - 1);
+        const pathComponents = match.split('/');
+        const childName = pathComponents[0];
+        if (pathComponents.length === 1) {
+          children.set(childName, 'LEAF');
+        } else {
+          children.set(childName, 'DIR');
+        }
+      });
+      return {
+        type: 'DIR',
+        children: Array.from(children)
+      }
+    }
   }
 
   register(context: vscode.ExtensionContext): vscode.Disposable {
@@ -84,7 +84,7 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
       {
         const editorUri = editor.document.uri;
 
-        const selectedItem = OxmlTreeContent.fromOxmlUri(OxmlUri.fromUri(editorUri));
+        const selectedItem = new OxmlTreeItem(OxmlUri.fromUri(editorUri), true);//OxmlTreeContent.fromOxmlUri(OxmlUri.fromUri(editorUri));
         treeView.reveal(selectedItem);
       }
     }));
@@ -122,15 +122,9 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
     const oxmlUri = OxmlUri.fromUri(uri);
     const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
 
-    let pathWithTrailingSlash = oxmlUri.entryName;
-    if (!pathWithTrailingSlash.endsWith('/')) {
-      pathWithTrailingSlash += '/';
-    }
+    const nodeInfo = await this._getNodeInfo(oxmlUri);
 
-    const entryNames = oxmlPackage.getAllEntryNames();
-    const matches = entryNames.filter((name) => (name + '/').startsWith(pathWithTrailingSlash));
-
-    if (this._isLeaf(oxmlUri)) {
+    if (nodeInfo.type === 'LEAF') {
       return {
         type: vscode.FileType.File,
         ctime: 0,
@@ -142,7 +136,7 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
         type: vscode.FileType.Directory,
         ctime: 0,
         mtime: 0,
-        size: (await this._getChildNames(oxmlUri)).length,
+        size: nodeInfo.children.length,
       }
     }
   }
@@ -150,15 +144,13 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
   async readDirectory(uri: vscode.Uri): Promise<[string, vscode.FileType][]> {
     const oxmlUri = OxmlUri.fromUri(uri);
 
-    if (this._isLeaf(oxmlUri)) {
+    const nodeInfo = await this._getNodeInfo(oxmlUri);
+
+    if (nodeInfo.type === 'LEAF') {
       throw new Error(`URI ${oxmlUri.toUri().toString()} is a not a directory.`);
     }
 
-    const childNames = await this._getChildNames(oxmlUri);
-    const children:[string, vscode.FileType][] = childNames.map((childName) => childName.endsWith('/')
-      ? [childName.substring(0, childName.length - 1), vscode.FileType.Directory]
-      : [childName, vscode.FileType.File]);
-
+    const children = nodeInfo.children.map(([childName, type]) => [childName, type === 'LEAF' ? vscode.FileType.File : vscode.FileType.Directory] as [string, vscode.FileType]);
     return children;
   }
 
@@ -231,180 +223,88 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
     this._onDidChangeTreeData.fire(undefined);
   }
 
-  private oxmlPackages: PackageInfo[] = [];
-
   getTreeItem(element: OxmlTreeItem): OxmlTreeItem {
     return element;
   }
 
   async getChildren(element?: OxmlTreeItem): Promise<OxmlTreeItem[]> {
     if (!element) {
-      let packages: OxmlTreePackage[] = [];
-      this.oxmlPackages.forEach((oxmlPackage) => {
-        packages.push(new OxmlTreePackage(oxmlPackage));
-      });
-      return Promise.resolve(packages);
-    }
-    else if (element.type === 'package' || element.type === 'directory') {
-      let items : OxmlTreeItem[] = [];
+      const openedPackagesUris = this._packageManager.getOpenedPackagesUris();
+      const children = openedPackagesUris.map((packageUri) => new OxmlTreeItem(new OxmlUri(packageUri, '/'), false));
+      return children;
+    } else {
+      const oxmlUri = element.oxmlUri;
+      const nodeInfo = await this._getNodeInfo(oxmlUri);
 
-      let contents = await this.readDirectory(element.oxmlUri.toUri());
-      // Sort directories ahead of files, then alphabetically.
-      contents.sort((content1, content2) => {
-        const type1 = content1[1] & ~vscode.FileType.SymbolicLink;
-        const type2 = content2[1] & ~vscode.FileType.SymbolicLink;
-        if (type1 != type2) {
-          return type1 == vscode.FileType.Directory ? -1 : 1;
-        }
+      if (nodeInfo.type === 'LEAF') {
+        throw new Error('This is a leaf node.');
+      }
 
-        const name1 = content1[0];
-        const name2 = content2[0];
-        if (name1 < name2) {
-          return -1;
-        } if (name1 > name2) {
-          return 1;
-        } else {
-          return 0;
-        }
-      });
-      contents.forEach((item) => {
-        if (item[1] === vscode.FileType.Directory) {
-          items.push(new OxmlTreeDirectory(item[0], element.oxmlUri));
-        }
-        else {
-          items.push(new OxmlTreeContent(item[0], element.oxmlUri));
-        }
-      });
-      return items;
-    }
-    else {
-      return Promise.resolve([]);
+      const children = nodeInfo.children.map(([childName, type]) => new OxmlTreeItem(OxmlUri.fromUri(vscode.Uri.joinPath(oxmlUri.toUri(), childName)), type === 'LEAF'));
+      return children;
     }
   }
 
   async getParent(element: OxmlTreeItem): Promise<OxmlTreeItem | null> {
-      const oxmlUri = element.oxmlUri;
-      if (oxmlUri.entryName === '/')
-      {
-          return null;
-      }
+    const oxmlUri = element.oxmlUri;
+    if (oxmlUri.entryName === '/')
+    {
+        return null;
+    }
 
-      let parentEntry = oxmlUri.entryName;
-      if (parentEntry.endsWith('/')) {
-          parentEntry = parentEntry.substring(0, parentEntry.length - 1);
-      }
-      const lastSlashIndex = parentEntry.lastIndexOf('/');
-      parentEntry = parentEntry.substring(0, lastSlashIndex + 1);
-
-      const parentOxmlUri = new OxmlUri(oxmlUri.packageUri, parentEntry);
-      if (parentEntry === '') {
-          const pkgInfo = this.oxmlPackages.find((pkg) => pkg.oxmlUri.toUri().toString() === parentOxmlUri.toUri().toString())
-          if (!pkgInfo) {
-              throw new Error(`package with URI ${parentOxmlUri.packageUri.toString()} not found.`);
-          }
-          return new OxmlTreePackage(pkgInfo);
-      } else {
-          parentEntry = parentEntry.substring(0, parentEntry.length - 1);
-          const lastSlashIndex2 = parentEntry.lastIndexOf('/');
-          const parentParentEntry = parentEntry.substring(0, lastSlashIndex2 + 1);
-          const name = parentEntry.substring(lastSlashIndex2 + 1);
-          return new OxmlTreeDirectory(name, new OxmlUri(oxmlUri.packageUri, parentParentEntry));
-      }
+    const tempUri = vscode.Uri.joinPath(oxmlUri.toUri(), '..');
+    const parentOxmlUri = OxmlUri.fromUri(tempUri);
+    return new OxmlTreeItem(parentOxmlUri, false);
   }
 
-  addOxmlPackage(uri: vscode.Uri) : void {
-      const newFileName = uri.toString().split('#').shift()?.split('?').shift()?.split('/').pop();
-      const newPackageInfo = { oxmlUri : new OxmlUri(uri, '/'), fileName: newFileName ? newFileName : uri.toString() };
-      let wasAdded = false;
-      
-      if (newFileName) {
-          const length = this.oxmlPackages.length;
-          const newComparisonName = newFileName.toLowerCase();
-          let previousComparisonName = '';
-
-          for (let i = 0; i < length; i += 1) {
-              const currentPackage = this.oxmlPackages[i];
-              if ((currentPackage.fileName === undefined) ||
-                 ((previousComparisonName < newComparisonName) && (newComparisonName < currentPackage.fileName.toLowerCase())))
-               {
-                  this.oxmlPackages.splice(i, 0, newPackageInfo);
-                  wasAdded = true;
-                  break;
-              }
-          }
-      }
-      if (!wasAdded) {
-          this.oxmlPackages.push(newPackageInfo);
-      }
+  addOxmlPackage(packageUri: vscode.Uri) : void {
+    const isPackageAlreadyOpened = this._packageManager.getOpenedPackagesUris().some((openedPackageUri) => openedPackageUri.toString() === packageUri.toString());
+    if (!isPackageAlreadyOpened) {
+      this._packageManager.openPackage(packageUri);
       this.refresh();
+    }
   }
 
   closeOxmlPackage(oxmlUri: OxmlUri) : void {
-      const length = this.oxmlPackages.length;
-      for (let i = 0; i < length; i += 1) {
-          if (this.oxmlPackages[i].oxmlUri === oxmlUri) {
-              this.oxmlPackages.splice(i, 1);
-              break;
-          }
-      }
-      this.refresh();
+    this._packageManager.closePackage(oxmlUri.packageUri);
+    this.refresh();
   }
 }
 
-export class OxmlTreePackage extends vscode.TreeItem implements TreePackage {
-    public type : 'package' = 'package';
-    public oxmlUri : OxmlUri;
-    public get id() {
-        return this.oxmlUri.toUri().toString();
-    }
-    public iconPath = new vscode.ThemeIcon('package');
-
-    constructor(packageInfo: PackageInfo) {
-        super(packageInfo.fileName, vscode.TreeItemCollapsibleState.Collapsed);
-        this.oxmlUri = packageInfo.oxmlUri;
-        this.contextValue = 'oxmlPackage';
-    }
+export interface IOxmlTreeItem {
+  oxmlUri: OxmlUri;
 }
 
-class OxmlTreeDirectory extends vscode.TreeItem implements TreeDirectory {
-    public type: 'directory' = 'directory';
-    public oxmlUri: OxmlUri;
-    public get id() {
-        return this.oxmlUri.toUri().toString();
-    }
+class OxmlTreeItem extends vscode.TreeItem implements IOxmlTreeItem {
+  private get _isPackage() {
+    return this.oxmlUri.entryName === '/';
+  }
 
-    constructor(name: string, parentOxmlUri: OxmlUri) {
-        super(name, vscode.TreeItemCollapsibleState.Collapsed);
-        this.oxmlUri = new OxmlUri(parentOxmlUri.packageUri, parentOxmlUri.entryName + name + '/');
-    }
-}
+  private get _isLeaf() {
+    return this.collapsibleState === vscode.TreeItemCollapsibleState.None;
+  }
 
-class OxmlTreeContent extends vscode.TreeItem {
-    public type: 'content' = 'content';
-    public oxmlUri: OxmlUri;
-    public get id() {
-        return this.oxmlUri.toUri().toString();
-    }
+  public get id() {
+    return this.oxmlUri.toUri().toString();
+  }
 
-    constructor(name: string, parentOxmlUri: OxmlUri) {
-        super(name);
-        this.oxmlUri = new OxmlUri(parentOxmlUri.packageUri, parentOxmlUri.entryName + name);
-        this.resourceUri = this.oxmlUri.toUri();
-        this.command = {
-            command: 'vscode.open',
-            arguments: [ this.resourceUri],
-            title: "Open OXML Content"
-        };  
-    }
+  public get iconPath() {
+    return this._isPackage ? new vscode.ThemeIcon('package') : undefined;
+  }
 
-    static fromOxmlUri(oxmlUri: OxmlUri): OxmlTreeContent {
-        const entryName = oxmlUri.entryName;
-        const lastSlashIndex = entryName.lastIndexOf('/');
-        const parentEntryName = entryName.substring(0, lastSlashIndex + 1);
-        const name = entryName.substring(lastSlashIndex + 1);
-        const parentOxmlUri = new OxmlUri(oxmlUri.packageUri, parentEntryName);
+  public get contextValue() {
+    return this._isPackage ? 'oxmlPackage' : undefined;
+  }
 
-        const content = new OxmlTreeContent(name, parentOxmlUri);
-        return content;
-    }
+  public get command() {
+    return this._isLeaf ? {
+      command: 'vscode.open',
+      arguments: [this.resourceUri],
+      title: "Open OXML Content"
+    } : undefined;
+  }
+
+  constructor(readonly oxmlUri: OxmlUri, isLeaf: boolean) {
+    super(oxmlUri.toUri(), isLeaf ? vscode.TreeItemCollapsibleState.None : vscode.TreeItemCollapsibleState.Collapsed);
+  }
 }
