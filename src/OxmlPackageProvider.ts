@@ -241,7 +241,8 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
       }
 
       const children = nodeInfo.children.map(([childName, type]) => new OxmlTreeItem(OxmlUri.fromUri(vscode.Uri.joinPath(oxmlUri.toUri(), childName)), type === 'LEAF'));
-      return children;
+      const sortedChildren = children.sort((item1, item2) => item1.compareTo(item2));
+      return sortedChildren;
     }
   }
 
@@ -302,6 +303,20 @@ class OxmlTreeItem extends vscode.TreeItem implements IOxmlTreeItem {
       arguments: [this.resourceUri],
       title: "Open OXML Content"
     } : undefined;
+  }
+
+  public compareTo(other: OxmlTreeItem): number {
+    if (this._isLeaf != other._isLeaf) {
+      return this._isLeaf ? 1 : -1;
+    } else {
+      if (this.id < other.id) {
+        return -1;
+      } else if (this.id > other.id) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
   }
 
   constructor(readonly oxmlUri: OxmlUri, isLeaf: boolean) {
