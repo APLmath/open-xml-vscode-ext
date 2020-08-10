@@ -21,4 +21,9 @@ export class OxmlUri {
   toUri(): vscode.Uri {
     return vscode.Uri.parse(`${SCHEME}://${this.packageUri.path.replace(/\//g, '\\')}${this.entryName}`);
   }
+
+  withJoinPath(...pathSegments: string[]): OxmlUri {
+    const tempUri = vscode.Uri.joinPath(this.toUri(), ...pathSegments);
+    return OxmlUri.fromUri(tempUri);
+  }
 }

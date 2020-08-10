@@ -24,10 +24,6 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
 
   // Returns array of strings of immediate child names, but with trailing slash if child is directory.
   private async _getNodeInfo(oxmlUri: OxmlUri): Promise<ILeafNode | IDirNode> {
-    // if (this._isLeaf(oxmlUri)) {
-    //   throw new Error(`URI ${oxmlUri.toUri().toString()} is a leaf node.`);
-    // }
-
     const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
 
     let pathWithTrailingSlash = oxmlUri.entryName;
@@ -85,16 +81,12 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
       {
         const editorUri = editor.document.uri;
 
-        const selectedItem = new OxmlTreeItem(OxmlUri.fromUri(editorUri), true);//OxmlTreeContent.fromOxmlUri(OxmlUri.fromUri(editorUri));
+        const selectedItem = new OxmlTreeItem(OxmlUri.fromUri(editorUri), true);
         treeView.reveal(selectedItem);
       }
     }));
 
     return vscode.Disposable.from(...disposables);
-  }
-
-  async openPackage(packageUri: vscode.Uri) {
-    this._packageManager;
   }
 
   /**
@@ -241,7 +233,7 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
         throw new Error('This is a leaf node.');
       }
 
-      const children = nodeInfo.children.map(([childName, type]) => new OxmlTreeItem(OxmlUri.fromUri(vscode.Uri.joinPath(oxmlUri.toUri(), childName)), type === 'LEAF'));
+      const children = nodeInfo.children.map(([childName, type]) => new OxmlTreeItem(oxmlUri.withJoinPath(childName), type === 'LEAF'));
       const sortedChildren = children.sort((item1, item2) => item1.compareTo(item2));
       return sortedChildren;
     }
@@ -254,9 +246,7 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
         return null;
     }
 
-    const tempUri = vscode.Uri.joinPath(oxmlUri.toUri(), '..');
-    const parentOxmlUri = OxmlUri.fromUri(tempUri);
-    return new OxmlTreeItem(parentOxmlUri, false);
+    return new OxmlTreeItem(oxmlUri.withJoinPath('..'), false);
   }
 
   addOxmlPackage(packageUri: vscode.Uri) : void {
