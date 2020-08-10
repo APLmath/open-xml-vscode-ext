@@ -1,12 +1,11 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
-import {OxmlUri} from './OxmlUri';
-import {OxmlPackageProvider} from './OxmlPackageProvider';
+import { OxmlUri } from './OxmlUri';
+import { OxmlPackageProvider, OxmlTreePackage } from './OxmlPackageProvider';
 import { OxmlEditorProvider } from './OxmlEditorProvider';
 import { RelsDocumentLinkProvider } from './RelsDocumentLinkProvider';
 import { OxmlPackageManager } from './OxmlPackageManager';
-import { OxmlTreeDataProvider, OxmlTreePackage } from './OxmlTreeDataProvider';
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed

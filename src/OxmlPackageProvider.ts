@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { OxmlUri } from './OxmlUri';
 import * as OxmlModel from './OxmlModel';
 import { OxmlPackageManager } from './OxmlPackageManager';
+import { toNamespacedPath } from 'path';
 
 interface PackageInfo {
   oxmlUri: OxmlUri,
@@ -35,6 +36,37 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
    * General functions.
    */
 
+  private _isLeaf(oxmlUri: OxmlUri): boolean {
+    return !oxmlUri.entryName.endsWith('/');
+  }
+
+  // Returns array of strings of immediate child names, but with trailing slash if child is directory.
+  private async _getChildNames(oxmlUri: OxmlUri): Promise<string[]> {
+    if (this._isLeaf(oxmlUri)) {
+      throw new Error(`URI ${oxmlUri.toUri().toString()} is a leaf node.`);
+    }
+
+    const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
+
+    let pathWithTrailingSlash = oxmlUri.entryName;
+    if (!pathWithTrailingSlash.endsWith('/')) {
+      pathWithTrailingSlash += '/';
+    }
+
+    const entryNames = oxmlPackage.getAllEntryNames();
+    const children = new Set<string>();
+    entryNames.forEach((entryName) => {
+      if (entryName.startsWith(pathWithTrailingSlash)) {
+        const remainderPath = entryName.substring(pathWithTrailingSlash.length);
+        const pathComponents = remainderPath.split('/');
+        const childName = pathComponents[0];
+        children.add(childName + (pathComponents.length === 1 ? '' : '/'));
+      }
+    });
+
+    return Array.from(children);
+  }
+
   register(context: vscode.ExtensionContext): vscode.Disposable {
     const disposables:vscode.Disposable[] = [];
 
@@ -58,7 +90,7 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
     }));
 
     return vscode.Disposable.from(...disposables);
-}
+  }
 
   async openPackage(packageUri: vscode.Uri) {
     this._packageManager;
@@ -98,50 +130,36 @@ export class OxmlPackageProvider implements vscode.FileSystemProvider, vscode.Tr
     const entryNames = oxmlPackage.getAllEntryNames();
     const matches = entryNames.filter((name) => (name + '/').startsWith(pathWithTrailingSlash));
 
-    if (matches.length === 1 && matches[0] + '/' === pathWithTrailingSlash) {
+    if (this._isLeaf(oxmlUri)) {
       return {
         type: vscode.FileType.File,
         ctime: 0,
         mtime: 0,
         size: oxmlPackage.getEntryData(oxmlUri.entryName).length,
       };
-    } else if (matches.length > 0) {
+    } else {
       return {
         type: vscode.FileType.Directory,
         ctime: 0,
         mtime: 0,
-        size: matches.length,
-      };
-    } else {
-      throw vscode.FileSystemError.FileNotFound();
+        size: (await this._getChildNames(oxmlUri)).length,
+      }
     }
   }
 
   async readDirectory(uri: vscode.Uri): Promise<[string, vscode.FileType][]> {
     const oxmlUri = OxmlUri.fromUri(uri);
-    const oxmlPackage = await this._packageManager.getPackage(oxmlUri.packageUri);
 
-    let pathWithTrailingSlash = oxmlUri.entryName;
-    if (!pathWithTrailingSlash.endsWith('/')) {
-      pathWithTrailingSlash += '/';
+    if (this._isLeaf(oxmlUri)) {
+      throw new Error(`URI ${oxmlUri.toUri().toString()} is a not a directory.`);
     }
 
-    const entryNames = oxmlPackage.getAllEntryNames();
-    const children = new Map<string, vscode.FileType>();
-    entryNames.forEach((name) => {
-      if (name.startsWith(pathWithTrailingSlash)) {
-        const remainderPath = name.substring(pathWithTrailingSlash.length);
-        const pathComponents = remainderPath.split('/');
-        const childName = pathComponents[0];
-        children.set(childName, pathComponents.length === 1 ? vscode.FileType.File : vscode.FileType.Directory);
-      }
-    });
+    const childNames = await this._getChildNames(oxmlUri);
+    const children:[string, vscode.FileType][] = childNames.map((childName) => childName.endsWith('/')
+      ? [childName.substring(0, childName.length - 1), vscode.FileType.Directory]
+      : [childName, vscode.FileType.File]);
 
-    if (children.size === 0) {
-      throw vscode.FileSystemError.FileNotFound();
-    }
-
-    return Array.from(children);
+    return children;
   }
 
   createDirectory(uri: vscode.Uri): void | Thenable<void> {
