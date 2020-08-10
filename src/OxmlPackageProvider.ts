@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { OxmlUri } from './OxmlUri';
 import * as OxmlModel from './OxmlModel';
 import { OxmlPackageManager } from './OxmlPackageManager';
+import path = require('path');
 
 interface ILeafNode {
   type: 'LEAF';
@@ -291,6 +292,10 @@ class OxmlTreeItem extends vscode.TreeItem implements IOxmlTreeItem {
 
   public get iconPath() {
     return this._isPackage ? new vscode.ThemeIcon('package') : undefined;
+  }
+
+  public get label() {
+    return this._isPackage ? path.basename(this.oxmlUri.packageUri.path) : super.label;
   }
 
   public get contextValue() {
